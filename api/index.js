@@ -3,35 +3,56 @@ export default async function handler(req, res) {
   // Habilitar CORS
   // ---------------------
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
+
+  // ---------------------
+  // Lista de modelos
+  // ---------------------
+  const availableModels = [
+    { id: "llama-4-maverick-17b-128e-instruct", name: "Meta Llama 4 Maverick", provider: "voidai" },
+    { id: "kimi-k2-instruct", name: "Moonshot Kimi K2", provider: "voidai" },
+    { id: "claude-3-5-haiku-20241022", name: "Anthropic Claude Haiku 3.5", provider: "voidai" },
+    { id: "gpt-5-chat-latest", name: "OpenAI GPT-5", provider: "navy" },
+    { id: "openai", name: "OpenAI GPT-5 Nano", provider: "pollinations" },
+    { id: "gemini-2.0-flash", name: "Google Gemini 2.5 Pro", provider: "google" },
+    { id: "unity", name: "Nitral Poppy NSFW", provider: "pollinations" }
+  ];
+
+  // ---------------------
+  // GET → retorna modelos
+  // ---------------------
+  if (req.method === "GET") {
+    return res.status(200).json({
+      object: "list",
+      data: availableModels
+    });
+  }
+
+  // ---------------------
+  // POST → encaminhar ao provider
+  // ---------------------
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
+    return res.status(405).json({ error: "Use GET ou POST" });
   }
 
   try {
-    const { prompt, image, model, stream } = req.body;
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing Bearer token" });
+    }
+    const userToken = authHeader.replace("Bearer ", "").trim();
+    // aqui você pode validar userToken no Firebase, banco, etc.
+    // se não precisar de validação, basta aceitar
 
+    const { prompt, image, model, stream } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: "Missing prompt" });
     }
-
-    // ---------------------
-    // Lista de modelos
-    // ---------------------
-    const availableModels = [
-      { id: "llama-4-maverick-17b-128e-instruct", name: "Meta Llama 4 Maverick", provider: "voidai" },
-      { id: "kimi-k2-instruct", name: "Moonshot Kimi K2", provider: "voidai" },
-      { id: "claude-3-5-haiku-20241022", name: "Anthropic Claude Haiku 3.5", provider: "voidai" },
-      { id: "gpt-5-chat-latest", name: "OpenAI GPT-5", provider: "navy" },
-      { id: "openai", name: "OpenAI GPT-5 Nano", provider: "pollinations" },
-      { id: "gemini-2.0-flash", name: "Google Gemini 2.5 Pro", provider: "google" },
-      { id: "unity", name: "Nitral Poppy NSFW", provider: "pollinations" }
-    ];
 
     const selectedModel = availableModels.find(m => m.id === model) || availableModels[0];
 

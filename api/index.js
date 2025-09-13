@@ -1,152 +1,88 @@
 export default async function handler(req, res) {
+  // ---------------------
+  // Habilitar CORS
+  // ---------------------
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-
-  const availableModels = [
-    {
-      id: 'llama-4-maverick-17b-128e-instruct',
-      name: 'Meta Llama 4 Maverick',
-      description: 'Cutting edge multimodal model',
-      icon: '<img src="https://c.feridinha.com/SBfgt.png" alt="Llama" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'PREMIUM',
-      tags: ['flux'],
-      credits: 5,
-      messages_limit_view: 50,
-      provider: 'voidai',
-      hide: false,
-      tools: {
-        image: "flux",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'kimi-k2-instruct',
-      name: 'Moonshot Kimi K2',
-      description: 'Modelo multimodal eficiente para desenvolvedores',
-      icon: '<img src="https://c.feridinha.com/kULVs.webp" alt="Kimi K2" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'PREMIUM',
-      tags: ['flux'],
-      credits: 5,
-      messages_limit_view: 50,
-      provider: 'voidai',
-      hide: false,
-      tools: {
-        image: "flux",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'claude-3-5-haiku-20241022',
-      name: 'Anthropic Claude Haiku 3.5',
-      description: 'Otimizado para velocidade e clareza',
-      icon: '<img src="https://c.feridinha.com/YoQAF.jpeg" alt="Claude Haiku" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'PREMIUM',
-      tags: ['flux'],
-      credits: 10,
-      messages_limit_view: 50,
-      provider: 'voidai',
-      hide: false,
-      tools: {
-        image: "flux",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'gpt-5-chat-latest',
-      name: 'OpenAI GPT-5',
-      description: 'Otimizado para lógica, análise e programação',
-      icon: '<img src="https://c.feridinha.com/nJqH7.webp" alt="GPT-5" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'PREMIUM',
-      tags: ['gpt-image-1'],
-      credits: 10,
-      messages_limit_view: 50,
-      provider: 'navy',
-      hide: false,
-      tools: {
-        image: "gpt-image-1",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'openai',
-      name: 'OpenAI GPT-5 Nano',
-      description: 'Otimizado para raciocínio e programação',
-      icon: '<img src="https://galaxy.ai/_next/image?url=%2Fgpt.webp&w=640&q=75" alt="GPT-5 Nano" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'FREE',
-      tags: ['gpt-image-1'],
-      credits: 0,
-      messages_limit_view: 50,
-      provider: 'pollinations',
-      hide: false,
-      tools: {
-        image: "gpt-image-1",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'gemini-2.0-flash',
-      name: 'Google Gemini 2.5 Pro',
-      description: 'Raciocínio avançado para informações precisas',
-      icon: '<img src="https://c.feridinha.com/3Vhke.webp" alt="Gemini" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: false,
-      category: 'FREE',
-      tags: ['nano-banana'],
-      credits: 0,
-      messages_limit_view: 50,
-      provider: 'google',
-      hide: false,
-      tools: {
-        image: "kontext",
-        video: "veo3"
-      }
-    },
-    {
-      id: 'unity',
-      name: 'Nitral Poppy NSFW',
-      description: 'Modelo não censurado +18',
-      icon: '<img src="https://cdn-uploads.huggingface.co/production/uploads/642265bc01c62c1e4102dc36/Boje781GkTdYgORTYGI6r.png" alt="Nitral Poppy" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">',
-      nsfw: true,
-      category: 'FREE',
-      tags: ['nsfw'],
-      credits: 5,
-      messages_limit_view: 50,
-      provider: 'pollinations',
-      hide: false,
-      tools: {
-        image: "turbo",
-        video: "veo3"
-      }
-    }
-  ];
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
-    if (req.method === "GET" && req.query.models === "true") {
-      return res.status(200).json(availableModels);
-    }
+    const { prompt, image, model, stream } = req.body;
 
-    const params = req.method === "POST" ? req.body : req.query;
-    const { prompt, image, model, stream } = params;
+    if (!prompt) return res.status(400).json({ error: "Missing prompt" });
 
-    if (!prompt) return res.status(400).json({ error: "?" });
+    // ---------------------
+    // Lista de modelos
+    // ---------------------
+    const availableModels = [
+      {
+        id: 'llama-4-maverick-17b-128e-instruct',
+        name: 'Meta Llama 4 Maverick',
+        provider: 'voidai'
+      },
+      {
+        id: 'kimi-k2-instruct',
+        name: 'Moonshot Kimi K2',
+        provider: 'voidai'
+      },
+      {
+        id: 'claude-3-5-haiku-20241022',
+        name: 'Anthropic Claude Haiku 3.5',
+        provider: 'voidai'
+      },
+      {
+        id: 'gpt-5-chat-latest',
+        name: 'OpenAI GPT-5',
+        provider: 'navy'
+      },
+      {
+        id: 'openai',
+        name: 'OpenAI GPT-5 Nano',
+        provider: 'pollinations'
+      },
+      {
+        id: 'gemini-2.0-flash',
+        name: 'Google Gemini 2.5 Pro',
+        provider: 'google'
+      },
+      {
+        id: 'unity',
+        name: 'Nitral Poppy NSFW',
+        provider: 'pollinations'
+      }
+    ];
 
     const selectedModel = availableModels.find(m => m.id === model) || availableModels[0];
 
+    // ---------------------
+    // Construção da mensagem (suporte multimodal)
+    // ---------------------
     let messages = [{ role: "user", content: [{ type: "text", text: prompt }] }];
 
-    const multimodalModels = ['gpt-5-nano', 'openai-fast', 'gemini-2.5-flash','grok-4','openai'];
+    const multimodalModels = [
+      'gpt-5-nano',
+      'openai',
+      'gpt-5-chat-latest',
+      'gemini-2.0-flash',
+      'llama-4-maverick-17b-128e-instruct',
+      'kimi-k2-instruct',
+      'claude-3-5-haiku-20241022'
+    ];
+
     if (image && multimodalModels.includes(selectedModel.id)) {
-      const imageUrls = image.split(",").map(url => ({ type: "image_url", image_url: { url: url.trim() } }));
+      const imageUrls = image.split(",").map(url => ({
+        type: "image_url",
+        image_url: { url: url.trim() }
+      }));
       messages[0].content.push(...imageUrls);
     }
 
+    // ---------------------
+    // Montar requisição por provider
+    // ---------------------
     let targetUrl = "";
     let headers = {};
     let body = {};
@@ -180,7 +116,7 @@ export default async function handler(req, res) {
         break;
 
       case "google":
-        targetUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+        targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.id}:generateContent`;
         headers = {
           "Content-Type": "application/json",
           "X-goog-api-key": "AIzaSyDmYlNft0R5zCl_E7vplqPcAdmSwCq5VXM"
@@ -194,16 +130,23 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
           "Authorization": "Bearer ek-3xnbvJsrj6IP76sm2Pz1HutwJrthobI6oPDRLombBCPuzynQYj"
         };
-        body = { model: selectedModel.id, messages, max_tokens: 1000, stream: stream === "true" }; // 🔹 corrigido aqui
+        body = { model: selectedModel.id, messages, max_tokens: 1000, stream: stream === "true" };
         break;
+
+      default:
+        return res.status(400).json({ error: "Provider não suportado" });
     }
 
+    // headers extras exceto Pollinations
     const fetchHeaders = { ...headers };
     if (selectedModel.provider !== "pollinations") {
       fetchHeaders["Referer"] = "https://leeka.vercel.app";
       fetchHeaders["Origin"] = "https://leeka.vercel.app";
     }
 
+    // ---------------------
+    // Chamada ao provider
+    // ---------------------
     const providerResp = await fetch(targetUrl, {
       method: "POST",
       headers: fetchHeaders,
@@ -217,6 +160,9 @@ export default async function handler(req, res) {
       return res.status(providerResp.status).json({ error: "Provider error", details: txt });
     }
 
+    // ---------------------
+    // STREAM vs NORMAL
+    // ---------------------
     if (stream === "true") {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -248,10 +194,7 @@ export default async function handler(req, res) {
         while (!done) {
           const { value, done: doneReading } = await reader.read();
           done = doneReading;
-          if (value) {
-            const chunkText = decoder.decode(value);
-            res.write(chunkText);
-          }
+          if (value) res.write(decoder.decode(value));
         }
         return res.end();
       }
